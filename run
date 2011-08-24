@@ -1,0 +1,6 @@
+#!/bin/bash -v
+g++ -O2 gen.cpp -o gen
+g++ -O3 quadrant.cpp -o quad
+gen > t.txt
+time quad < t.txt  > out.txt
+less out.txt
