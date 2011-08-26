@@ -14,18 +14,19 @@ int plusOrMinux()
 }
 int main()
 {
-  int n = 100000;
+  int n = 100;
+  cin>>n;
   cout<<n<<std::endl;
   for(int i=0;i<n;i++)
     {
-      cout<<nzrand()*plusOrMinux()<<' '<<nzrand()*plusOrMinux()<<endl;
+      cout<<plusOrMinux()<<' '<<plusOrMinux()<<endl;
     }
   cout<<n<<std::endl;
   for(int i=0;i<n;++i)
     {
       char com[]="XYC";
-      int n1 = nzrand();
-      int n2 = nzrand();
+      int n1 = nzrand()%n+1;
+      int n2 = nzrand()%n+1;
       int t;
       if (n1>n2) 
 	{
