@@ -34,53 +34,53 @@
       map-vals (fn map-vals [orig-map old-new-val-map]
                  (into {} (map (fn [[k v]] [k (old-new-val-map v)]) orig-map)))]
   (defn execute-cmd [tree [cmd start end]]
-    (letd [root-loc (z/zipper identity #(keep identity [(:l %) (:r %)])
-                              (fn [nd [x y & rest]]
-                                (cond
-                                 rest (throw (Exception. "Invalid use of make-node in zipper"))
-                                 (and x y) (assoc nd :l x :r y)
-                                 x (assoc nd :l x)
-                                 :else nd)) tree)
-           helper1 (fn helper1 [loc parent-whole-modifier parent-part-modifier s e]
-                     (letd [nd (z/node loc)
-                            {:keys [start end mid val child-modifier]} nd
-                            f-new-whole (if child-modifier (comp parent-whole-modifier child-modifier) parent-whole-modifier)
-                            f-new-part (if child-modifier (comp parent-part-modifier child-modifier) parent-part-modifier)]
-                           (cond
-                            (and (nil? s) (nil? e)) [nil (z/edit loc (fn [nd] (-> (update-in nd [:val] #(map-keys % parent-whole-modifier))
-                                                                                  (assoc :child-modifiers f-new-whole))))]
-                            (and (= s start) (= e end)) (let [ret-loc (z/edit loc (fn [nd] (-> (update-in nd [:val] #(map-keys % parent-part-modifier))
-                                                                                               (assoc :child-modifiers f-new-part))))]
-                                                          [(:val (z/node ret-loc)) ret-loc])
-                            (< s mid e) (let [loc-left-initial (z/down loc)
-                                              [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s (int mid))
-                                              loc-right-initial (z/right loc-left-final)
-                                              [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part (inc (int mid)) e)
-                                              cur-loc (z/up loc-right-final)
-                                              ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
-                                                                                   (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
-                                                                                                                    (:val (z/node loc-right-final)))))))]
-                                          [(add-quadrant-counts v-left v-right) ret-loc])
-                            (< e mid) (let [loc-left-initial (z/down loc)
-                                            [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s e)
-                                            loc-right-initial (z/right loc-left-final)
-                                            [_ loc-right-final] (helper1 loc-left-final f-new-whole identity nil nil)
-                                            cur-loc (z/up loc-right-final)
-                                            ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
-                                                                                 (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
-                                                                                                                  (:val (z/node loc-right-final)))))))]
-                                        [v-left ret-loc])
-                            (< mid s) (let [loc-left-initial (z/down loc)
-                                            [_ loc-left-final] (helper1 loc-left-initial f-new-whole identity nil nil)
-                                            loc-right-initial (z/right loc-left-final)
-                                            [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part s e)
-                                            cur-loc (z/up loc-right-final)
-                                            ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
-                                                                                 (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
-                                                                                                                  (:val (z/node loc-right-final)))))))]
-                                        [v-right ret-loc]))))
-           [v loc] (helper1 root-loc identity (quadrant-flipper cmd) start end)]
-          [v (z/root loc)])))
+    #_(clojure.inspector/inspect-tree (self-keyed-map tree cmd start end))
+    (let [root-loc (z/zipper identity #(keep identity [(:l %) (:r %)])
+                             (fn [nd [x y & rest]]
+                               (cond
+                                rest (throw (Exception. "Invalid use of make-node in zipper"))
+                                (and x y) (assoc nd :l x :r y)
+                                x (assoc nd :l x)
+                                :else nd)) tree)
+          helper1 (fn helper1 [loc parent-whole-modifier parent-part-modifier s e]
+                    (let [{:keys [start end mid val child-modifier]} (z/node loc)
+                          f-new-whole (if child-modifier (comp parent-whole-modifier child-modifier) parent-whole-modifier)
+                          f-new-part (if child-modifier (comp parent-part-modifier child-modifier) parent-part-modifier)]
+                      (cond
+                       (and (nil? s) (nil? e)) [nil (z/edit loc (fn [nd] (-> (update-in nd [:val] #(map-keys % parent-whole-modifier))
+                                                                             (assoc :child-modifiers f-new-whole))))]
+                       (and (= s start) (= e end)) (let [ret-loc (z/edit loc (fn [nd] (-> (update-in nd [:val] #(map-keys % parent-part-modifier))
+                                                                                          (assoc :child-modifiers f-new-part))))]
+                                                     [(:val (z/node ret-loc)) ret-loc])
+                       (< s mid e) (let [loc-left-initial (z/down loc)
+                                         [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s (int mid))
+                                         loc-right-initial (z/right loc-left-final)
+                                         [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part (inc (int mid)) e)
+                                         cur-loc (z/up loc-right-final)
+                                         ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
+                                                                              (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
+                                                                                                               (:val (z/node loc-right-final)))))))]
+                                     [(add-quadrant-counts v-left v-right) ret-loc])
+                       (< e mid) (let [loc-left-initial (z/down loc)
+                                       [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s e)
+                                       loc-right-initial (z/right loc-left-final)
+                                       [_ loc-right-final] (helper1 loc-left-final f-new-whole identity nil nil)
+                                       cur-loc (z/up loc-right-final)
+                                       ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
+                                                                            (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
+                                                                                                             (:val (z/node loc-right-final)))))))]
+                                   [v-left ret-loc])
+                       (< mid s) (let [loc-left-initial (z/down loc)
+                                       [_ loc-left-final] (helper1 loc-left-initial f-new-whole identity nil nil)
+                                       loc-right-initial (z/right loc-left-final)
+                                       [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part s e)
+                                       cur-loc (z/up loc-right-final)
+                                       ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
+                                                                            (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
+                                                                                                             (:val (z/node loc-right-final)))))))]
+                                   [v-right ret-loc]))))
+          [v loc] (helper1 root-loc identity (quadrant-flipper cmd) start end)]
+      [v (z/root loc)])))
 
 #_(solve)
 (defn read-stdin [& {:keys [fname] :or {fname "inp.txt"}}]
@@ -94,25 +94,25 @@
         n (ffirst n-q)
         nodes (->> n-q (drop 1) (take n) (map (fn [i [x y]] {:start i :end i :val (if (> x 0) (if (> y 0) q1 q4) (if (> y 0) q2 q3))}) (drop 1 (range))))
         tree (loop [[x y :as cur-nodes] nodes]
-               (if-not (and x y) cur-nodes
+               (if-not y x
                        (let [new-nodes (map (fn [[{:as w1 s1 :start e1 :end v1 :val} {:as w2 s2 :start e2 :end v2 :val}]]
                                               (if w2 {:start s1 :end e2 :mid (/ (+ e1 s2) 2) :val (add-quadrant-counts v1 v2) :l w1 :r w2} w1)) (partition-all 2 cur-nodes))]
                          (recur new-nodes))))
         [[nq] & queries] (drop (+ n 1) n-q)]
-    [tree (take nq queries)]))
+    [tree (into [] (take nq queries))]))
 
-#_(time (read-stdin :fname "inp.txt"))
+#_(time (def d (read-stdin :fname "inp.txt")))
 #_(time (read-stdin :fname "inp10.txt"))
 #_(time (def tt (read-stdin :fname "inp11.txt")))
 #_(time (def tt (read-stdin :fname "t.txt")))
 #_(read-stdin)
 
 (defn solve []
-  (let [[tree queries] (read-stdin :fname "inp.txt")]
+  (let [[tree queries] (read-stdin :fname "l.2.txt")]
     (reduce (fn [ct [cmd _ _ :as q]]
               (let [[v nt] (execute-cmd ct q)]
                 (if (= cmd 'C) (let [{:keys [q1 q2 q3 q4] :or {q1 0 q2 0 q3 0 q4 0}} v]
-                                 (println (str q1 ' ' q2 ' ' q3 ' ' q4)))) nt)) tree queries)))
+                                 (println (str q1 " " q2 " " q3 " " q4)))) nt)) tree queries)))
 #_(solve)
 (defn -main []
   (solve))
