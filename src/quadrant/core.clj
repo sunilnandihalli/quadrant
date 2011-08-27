@@ -42,7 +42,7 @@
                                 (and x y) (assoc nd :l x :r y)
                                 x (assoc nd :l x)
                                 :else nd)) tree)
-          helper1 (fn helper1 [loc parent-whole-modifier parent-part-modifier s e]
+          helper (fn helper [loc parent-whole-modifier parent-part-modifier s e]
                     (let [{:keys [start end mid val child-modifier]} (z/node loc)
                           f-new-whole (if child-modifier (comp parent-whole-modifier child-modifier) parent-whole-modifier)
                           f-new-part (if child-modifier (comp parent-part-modifier child-modifier) parent-part-modifier)]
@@ -53,33 +53,33 @@
                                                                                           (assoc :child-modifiers f-new-part))))]
                                                      [(:val (z/node ret-loc)) ret-loc])
                        (< s mid e) (let [loc-left-initial (z/down loc)
-                                         [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s (int mid))
+                                         [v-left loc-left-final] (helper loc-left-initial f-new-whole f-new-part s (int mid))
                                          loc-right-initial (z/right loc-left-final)
-                                         [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part (inc (int mid)) e)
+                                         [v-right loc-right-final] (helper loc-right-initial f-new-whole f-new-part (inc (int mid)) e)
                                          cur-loc (z/up loc-right-final)
                                          ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
                                                                               (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
                                                                                                                (:val (z/node loc-right-final)))))))]
                                      [(add-quadrant-counts v-left v-right) ret-loc])
                        (< e mid) (let [loc-left-initial (z/down loc)
-                                       [v-left loc-left-final] (helper1 loc-left-initial f-new-whole f-new-part s e)
+                                       [v-left loc-left-final] (helper loc-left-initial f-new-whole f-new-part s e)
                                        loc-right-initial (z/right loc-left-final)
-                                       [_ loc-right-final] (helper1 loc-left-final f-new-whole identity nil nil)
+                                       [_ loc-right-final] (helper loc-left-final f-new-whole identity nil nil)
                                        cur-loc (z/up loc-right-final)
                                        ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
                                                                             (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
                                                                                                              (:val (z/node loc-right-final)))))))]
                                    [v-left ret-loc])
                        (< mid s) (let [loc-left-initial (z/down loc)
-                                       [_ loc-left-final] (helper1 loc-left-initial f-new-whole identity nil nil)
+                                       [_ loc-left-final] (helper loc-left-initial f-new-whole identity nil nil)
                                        loc-right-initial (z/right loc-left-final)
-                                       [v-right loc-right-final] (helper1 loc-right-initial f-new-whole f-new-part s e)
+                                       [v-right loc-right-final] (helper loc-right-initial f-new-whole f-new-part s e)
                                        cur-loc (z/up loc-right-final)
                                        ret-loc (z/edit cur-loc (fn [nd] (-> (dissoc nd :child-modifiers)
                                                                             (assoc :val (add-quadrant-counts (:val (z/node loc-left-final))
                                                                                                              (:val (z/node loc-right-final)))))))]
                                    [v-right ret-loc]))))
-          [v loc] (helper1 root-loc identity (quadrant-flipper cmd) start end)]
+          [v loc] (helper root-loc identity (quadrant-flipper cmd) start end)]
       [v (z/root loc)])))
 
 #_(solve)
