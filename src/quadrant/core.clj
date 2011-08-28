@@ -7,7 +7,6 @@
   (if (seq exprs) `(let [~pattern ~first] (thrush-with-pattern [~pattern] ~@exprs)) first))
 
 (defn add-quadrant-counts [a b]
-  {:pre [#_(do (println [a b]) true)]}
   (let [mycompare (fn [{:keys [q1 q2 q3 q4] :or {q1 0 q2 0 q3 0 q4 0}}
                        {:keys [q1- q2- q3- q4-] :or {q1- 0 q2- 0 q3- 0 q4- 0}}]
                     (first (keep (comp not zero?) (map compare [q1 q2 q3 q4] [q1- q2- q3- q4-]))))
@@ -61,10 +60,7 @@
 
 
 (defn read-stdin [& {:keys [fname] :or {fname "inp.txt"}}]
-  (let [vs (or (seq (doall (line-seq (java.io.BufferedReader. *in*))))
-               (seq (doall (line-seq
-                            (java.io.BufferedReader.
-                             (java.io.FileReader. fname))))))
+  (let [vs (seq (line-seq (java.io.BufferedReader. *in*)))
         n-q (->> (map #(re-seq #"[^ ]+" %) vs)
                  (map #(map read-string %)))
         [q1 q2 q3 q4] [{:q1 1} {:q2 1} {:q3 1} {:q4 1}]
@@ -76,19 +72,13 @@
                                               (if w2 {:start s1 :end e2 :mid (/ (+ e1 s2) 2) :val (add-quadrant-counts v1 v2) :l w1 :r w2} w1)) (partition-all 2 cur-nodes))]
                          (recur new-nodes))))
         [[nq] & queries] (drop (+ n 1) n-q)]
-    [tree (into [] (take nq queries))]))
+    [tree (take nq queries)]))
 
 (defn solve []
-  (let [[tree queries] (read-stdin :fname "inp100.txt")
+  (let [[tree queries] (read-stdin)
         root-loc (z/zipper :mid #(keep identity [(:l %) (:r %)])
                            (fn [nd [x y & rest]]
-                             #_(println "calling make-node")
-                             #_(clojure.pprint/pprint (self-keyed-map nd x y))
-                             (cond
-                              rest (throw (Exception. "Invalid use of make-node in zipper"))
-                              (and x y) (assoc nd :l x :r y :val (add-quadrant-counts (:val x) (:val y)))
-                              x (throw (Exception. "Invalid use of make-node in zipper"))
-                              :else nd)) tree)]
+                             (if y (assoc nd :l x :r y :val (add-quadrant-counts (:val x) (:val y))) nd)) tree)]
     (reduce (fn [loc [id [cmd _ _ :as q]]]
               (let [[v new-loc] (execute-cmd loc q)]
                 (if (= cmd 'C) (let [{:keys [q1 q2 q3 q4] :or {q1 0 q2 0 q3 0 q4 0}} v]
