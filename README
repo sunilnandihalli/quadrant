@@ -1,13 +1,2 @@
-# quadrant
-
-FIXME: write description
-
-## Usage
-
-FIXME: write
-
-## License
-
-Copyright (C) 2011 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+has implementation of the solution to Interview Street's quadrant problem in both clojure and c++ the C++ one meets 
+the speed requirements..
